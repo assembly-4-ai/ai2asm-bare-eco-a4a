@@ -1,4 +1,3 @@
-Absoluut, mijn excuses. Hier is de gecombineerde checklist die de status van de verschillende onderdelen van Project Arora aangeeft:
 
 **Project Arora: Gecombineerde TODO & DONE Checklist**
 
@@ -76,6 +75,4 @@ Absoluut, mijn excuses. Hier is de gecombineerde checklist die de status van de 
 | **VI. Bouw & Test**                    |            |                                                                                                                                                              |
 | Assembleren alle modules               | [X] DONE   | Objectbestanden worden gegenereerd.                                                                                                                          |
 | Linken tot `.efi` applicatie           | [ ] TODO   | Stel linker script/commando's op.                                                                                                                            |
-| Testen op UEFI Systeem/Emulator        | [ ] TODO   | Iteratief testen en debuggen.                                                                                                                                |
-
-Dit geeft een duidelijker beeld van de resterende werkzaamheden. De stappen met "[ ] TODO" vereisen actieve codering en implementatie. De "[~] PARTIAL" zijn structureel aanwezig maar missen nog cruciale details of robuustheid.
+| Testen op UEFI Systeem/Emulator        | [ ] TODO   | Iteratief testen en debuggen.                                                                                                                                
