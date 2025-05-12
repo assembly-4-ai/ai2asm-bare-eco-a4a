@@ -17,7 +17,7 @@ Yours sincerely,
 
 -= A4A TEAM -=  
 
-e-mail:assembly-4-ai@hotmail.com
+e-mail:  assembly-4-ai@hotmail.com
 
 --- true and honest coding ---
 
