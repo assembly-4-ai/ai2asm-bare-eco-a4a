@@ -1,11 +1,11 @@
 -= ASSEMBLY 4 AI PROJECT ARORA =-
 
-Project initiated for running neural networks in a pure built from scratch assembly environment.
+Project for running neural networks in a pure built from scratch assembly environment.
 
 Rulez:
 
-- no existings sys calls
-- no interupts
+- no existing sys calls
+- no interrupts
 - no foreign code
 - tweaked opcode usage
 
