@@ -258,10 +258,19 @@ ahci_init:
 .fail_no_bar:
     mov rax, 1 ; Example error code
     stc
-    mov rsi, ahci_init_fail_msg; call scr64_print_string
+    mov rsi, ahci_init_fail_msg; 
+    call scr64_print_string
 
 .init_done:
-    pop r15; pop r14; pop r13; pop r12; pop rdi; pop rsi; pop rdx; pop rcx; pop rbx
+    pop r15;
+    pop r14;
+    pop r13;
+    pop r12;
+    pop rdi;
+    pop rsi;
+    pop rdx;
+    pop rcx;
+    pop rbx
     ret
 
 ;--------------------------------------------------------------------------
@@ -324,7 +333,13 @@ ahci_read_write_sectors:
     imul rax, r10, AHCI_CMD_TABLE_SIZE
     add rsi, rax ; RSI = Command Table address
     ; Clear the command table? Zeroing is safer.
-    push rsi; push rcx; mov rcx, AHCI_CMD_TABLE_SIZE / 8; xor eax, eax; rep stosq; pop rcx; pop rsi
+    push rsi;
+    push rcx;
+    mov rcx, AHCI_CMD_TABLE_SIZE / 8;
+    xor eax, eax;
+    rep stosq;
+    pop rcx;
+    pop rsi
 
     ; --- Build the Command FIS (in Command Table at offset 0) ---
     mov byte [rsi + AHCI_CT_CFIS_OFFSET + AHCI_FIS_TYPE], AHCI_FIS_TYPE_REG_H2D
@@ -340,15 +355,21 @@ ahci_read_write_sectors:
     ; LBA and Sector Count (LBA48)
     mov rax, r13 ; LBA
     mov [rsi + AHCI_CT_CFIS_OFFSET + AHCI_FIS_LBA0], al
-    shr rax, 8; mov [rsi + AHCI_CT_CFIS_OFFSET + AHCI_FIS_LBA1], al
-    shr rax, 8; mov [rsi + AHCI_CT_CFIS_OFFSET + AHCI_FIS_LBA2], al
-    shr rax, 8; mov [rsi + AHCI_CT_CFIS_OFFSET + AHCI_FIS_LBA3], al
-    shr rax, 8; mov [rsi + AHCI_CT_CFIS_OFFSET + AHCI_FIS_LBA4], al
-    shr rax, 8; mov [rsi + AHCI_CT_CFIS_OFFSET + AHCI_FIS_LBA5], al
+    shr rax, 8;
+    mov [rsi + AHCI_CT_CFIS_OFFSET + AHCI_FIS_LBA1], al
+    shr rax, 8;
+    mov [rsi + AHCI_CT_CFIS_OFFSET + AHCI_FIS_LBA2], al
+    shr rax, 8;
+    mov [rsi + AHCI_CT_CFIS_OFFSET + AHCI_FIS_LBA3], al
+    shr rax, 8;
+    mov [rsi + AHCI_CT_CFIS_OFFSET + AHCI_FIS_LBA4], al
+    shr rax, 8;
+    mov [rsi + AHCI_CT_CFIS_OFFSET + AHCI_FIS_LBA5], al
     mov byte [rsi + AHCI_CT_CFIS_OFFSET + AHCI_FIS_DEVICE], 1 << 6 ; LBA mode
     mov ax, r14w ; Sector Count
     mov [rsi + AHCI_CT_CFIS_OFFSET + AHCI_FIS_COUNT_L], al
-    shr ax, 8; mov [rsi + AHCI_CT_CFIS_OFFSET + AHCI_FIS_COUNT_H], al
+    shr ax, 8;
+    mov [rsi + AHCI_CT_CFIS_OFFSET + AHCI_FIS_COUNT_H], al
     ; Features L/H, Control, ICC are 0
 
     ; --- Build the PRDT (in Command Table at offset 0x80) ---
@@ -407,13 +428,19 @@ ahci_read_write_sectors:
     ; Read port status for debugging
     mov eax, [rbx + AHCI_PxTFD] ; Get Task File Data (Status/Error)
     ; TODO: Clear command? Reset port?
-    mov rsi, ahci_cmd_fail_msg; call scr64_print_string
-    mov rax, r12; call scr64_print_dec ; Print Port
+    mov rsi, ahci_cmd_fail_msg;
+    call scr64_print_string
+    mov rax, r12;
+    call scr64_print_dec ; Print Port
     mov rsi, ahci_status_msg; call scr64_print_string
-    mov eax, [rbx + AHCI_PxTFD]; call scr64_print_hex ; Print TFD
-    mov rsi, ahci_err_msg; call scr64_print_string
-    mov eax, [rbx + AHCI_PxSERR]; call scr64_print_hex ; Print SError
-    mov rsi, ahci_done_msg; call scr64_print_string
+    mov eax, [rbx + AHCI_PxTFD];
+    call scr64_print_hex ; Print TFD
+    mov rsi, ahci_err_msg;
+    call scr64_print_string
+    mov eax, [rbx + AHCI_PxSERR];
+    call scr64_print_hex ; Print SError
+    mov rsi, ahci_done_msg;
+    call scr64_print_string
     mov rax, FAT_ERR_DISK_ERROR ; Return disk error
     stc
     jmp .done_rw
