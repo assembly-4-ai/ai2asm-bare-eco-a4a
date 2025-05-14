@@ -62,63 +62,197 @@ fat32_flush_fat_cache:
 ;--------------------------------------------------------------------------
 fat32_read_fat_sector: ; Input RSI = Absolute LBA of FAT sector
     push rsi
-    cmp rsi, [fat32_fat_cache_lba]; je .read_fat_ok_pop
-    call fat32_flush_fat_cache; jc .read_fat_error_pop
+    cmp rsi, [fat32_fat_cache_lba];
+    je .read_fat_ok_pop
+    call fat32_flush_fat_cache;
+    jc .read_fat_error_pop
 .read_fat_do_read:
-    pop rsi; push rsi ; Get requested LBA
-    mov edi, [fat32_ahci_port]; mov edx, 1; lea rcx, [sector_buffer]; mov r8b, 0
-    call ahci_read_sectors; jnc .read_fat_ahci_ok; jmp .read_fat_error_pop
-.read_fat_ahci_ok: test rax, rax; jnz .read_fat_error_pop
-    pop rsi; mov [fat32_fat_cache_lba], rsi; mov byte [fat32_fat_cache_dirty], 0
-.read_fat_ok_pop: pop rsi; xor rax, rax; clc; ret
-.read_fat_error_pop: pop rsi; mov qword [fat32_fat_cache_lba], -1
-    cmp rax, 0; jnz .read_fat_error_ret; mov rax, FAT_ERR_FAT_READ
+    pop rsi;
+    push rsi ; Get requested LBA
+    mov edi, [fat32_ahci_port];
+    mov edx, 1;
+    lea rcx, [sector_buffer];
+    mov r8b, 0
+    call ahci_read_sectors;
+    jnc .read_fat_ahci_ok;
+    jmp .read_fat_error_pop
+.read_fat_ahci_ok:
+    test rax, rax;
+    jnz .read_fat_error_pop
+    pop rsi;
+    mov [fat32_fat_cache_lba], rsi;
+    mov byte [fat32_fat_cache_dirty], 0
+.read_fat_ok_pop:
+    pop rsi;
+    xor rax, rax;
+    clc;
+    ret
+.read_fat_error_pop:
+    pop rsi;
+    mov qword [fat32_fat_cache_lba], -1
+    cmp rax, 0;
+    jnz .read_fat_error_ret;
+    mov rax, FAT_ERR_FAT_READ
 .read_fat_error_ret: stc; ret
 
 ;--------------------------------------------------------------------------
 fat32_init_partition: ; Input RDI=PartLBA, EDX=AHCIPort
-    push rbx; push rsi; push rdi; push rdx; push r12; push r13
-    mov [fat32_partition_lba], rdi; mov [fat32_ahci_port], edx
-    mov byte [fat32_initialized], 0; mov qword [fat32_fat_cache_lba], -1; mov byte [fat32_fat_cache_dirty], 0
-    mov esi, [fat32_partition_lba]; mov edx, 1; lea rcx, [sector_buffer]; mov r8b, 0; mov edi, [fat32_ahci_port]
-    call ahci_read_sectors; jnc .read_bpb_ok; jmp .init_disk_error_msg
-.read_bpb_ok: test rax, rax; jnz .init_disk_error_msg
-    lea rsi, [sector_buffer]; cmp word [rsi + 510], 0xAA55; jne .init_bad_bpb_msg
-    mov ax, [rsi + FAT_BPB_BytesPerSector]; cmp ax, 512; jne .init_bad_bpb_msg; mov [fat32_bytes_per_sector], ax
-    movzx bx, byte [rsi + FAT_BPB_SectorsPerCluster]; test bl, bl; jz .init_bad_bpb_msg; mov [fat32_sectors_per_cluster], bl
-    mov ax, [rsi + FAT_BPB_ReservedSectors]; cmp ax, 0; je .init_bad_bpb_msg; mov [fat32_reserved_sectors], ax
-    movzx bx, byte [rsi + FAT_BPB_NumberOfFATs]; cmp bl, 1; jb .init_bad_bpb_msg; mov [fat32_num_fats], bl
-    mov eax, [rsi + FAT32_BPB_SectorsPerFAT32]; test eax, eax; jz .init_not_fat32_msg; mov [fat32_sectors_per_fat], eax
-    mov eax, [rsi + FAT32_BPB_RootCluster]; cmp eax, FAT32_CLUSTER_MIN_VALID; jb .init_bad_bpb_msg; mov [fat32_root_cluster], eax; mov [current_dir_cluster], eax
-    mov ax, [rsi + FAT32_BPB_FSInfo]; mov [fat32_fsinfo_sector], ax
-    mov rdi, rsi; add rdi, FAT32_BPB_FSType; lea r12, [fs_type_string_fat32]; mov ecx, 8; repe cmpsb; jne .init_not_fat32_msg
-    mov eax, [fat32_sectors_per_fat]; movzx ebx, byte [fat32_num_fats]; mul ebx; movzx ebx, word [fat32_reserved_sectors]; add eax, ebx; mov [fat32_first_data_sector], eax
-    mov rbx, [fat32_partition_lba]; movzx eax, word [fat32_reserved_sectors]; add rbx, rax; mov [fat32_fat_lba], ebx
-    movzx eax, byte [fat32_sectors_per_cluster]; movzx ebx, word [fat32_bytes_per_sector]; mul ebx; mov [fat32_bytes_per_cluster], eax
-    mov byte [fat32_initialized], 1; mov rsi, msg_fat32_bpb_ok; call scr64_print_string; xor rax, rax; clc; jmp .init_done
-.init_disk_error_msg: mov rsi, msg_fat32_read_err; call scr64_print_string; mov rax, FAT_ERR_DISK_ERROR; stc; jmp .init_done
-.init_bad_bpb_msg: mov rsi, msg_fat32_bad_bpb; call scr64_print_string; mov rax, FAT_ERR_BAD_BPB; stc; jmp .init_done
-.init_not_fat32_msg: mov rsi, msg_fat32_not_fat32; call scr64_print_string; mov rax, FAT_ERR_NOT_FAT32; stc
-.init_done: pop r13; pop r12; pop rdx; pop rdi; pop rsi; pop rbx; ret
+    push rbx;
+push rsi;
+push rdi;
+push rdx;
+push r12;
+push r13
+    mov [fat32_partition_lba], rdi;
+mov [fat32_ahci_port], edx
+    mov byte [fat32_initialized], 0;
+mov qword [fat32_fat_cache_lba], -1;
+mov byte [fat32_fat_cache_dirty], 0
+    mov esi, [fat32_partition_lba];
+mov edx, 1;
+lea rcx, [sector_buffer];
+mov r8b, 0;
+mov edi, [fat32_ahci_port]
+    call ahci_read_sectors;
+jnc .read_bpb_ok;
+jmp .init_disk_error_msg
+.read_bpb_ok:
+test rax, rax;
+jnz .init_disk_error_msg
+    lea rsi, [sector_buffer];
+cmp word [rsi + 510], 0xAA55;
+jne .init_bad_bpb_msg
+    mov ax, [rsi + FAT_BPB_BytesPerSector];
+cmp ax, 512;
+jne .init_bad_bpb_msg;
+mov [fat32_bytes_per_sector], ax
+    movzx bx, byte [rsi + FAT_BPB_SectorsPerCluster];
+test bl, bl;
+jz .init_bad_bpb_msg;
+mov [fat32_sectors_per_cluster], bl
+    mov ax, [rsi + FAT_BPB_ReservedSectors];
+cmp ax, 0;
+je .init_bad_bpb_msg;
+mov [fat32_reserved_sectors], ax
+    movzx bx, byte [rsi + FAT_BPB_NumberOfFATs];
+cmp bl, 1;
+jb .init_bad_bpb_msg;
+mov [fat32_num_fats], bl
+    mov eax, [rsi + FAT32_BPB_SectorsPerFAT32];
+test eax, eax;
+jz .init_not_fat32_msg;
+mov [fat32_sectors_per_fat], eax
+    mov eax, [rsi + FAT32_BPB_RootCluster];
+cmp eax, FAT32_CLUSTER_MIN_VALID;
+jb .init_bad_bpb_msg;
+mov [fat32_root_cluster], eax;
+mov [current_dir_cluster], eax
+    mov ax, [rsi + FAT32_BPB_FSInfo];
+mov [fat32_fsinfo_sector], ax
+    mov rdi, rsi;
+add rdi, FAT32_BPB_FSType;
+lea r12, [fs_type_string_fat32];
+mov ecx, 8;
+repe cmpsb;
+jne .init_not_fat32_msg
+    mov eax, [fat32_sectors_per_fat];
+movzx ebx, byte [fat32_num_fats];
+mul ebx;
+movzx ebx, word [fat32_reserved_sectors];
+add eax, ebx;
+mov [fat32_first_data_sector], eax
+    mov rbx, [fat32_partition_lba];
+movzx eax, word [fat32_reserved_sectors];
+add rbx, rax; mov [fat32_fat_lba], ebx
+    movzx eax, byte [fat32_sectors_per_cluster];
+movzx ebx, word [fat32_bytes_per_sector];
+mul ebx; mov [fat32_bytes_per_cluster], eax
+    mov byte [fat32_initialized], 1;
+mov rsi, msg_fat32_bpb_ok;
+call scr64_print_string;
+xor rax, rax; clc;
+jmp .init_done
+.init_disk_error_msg:
+mov rsi, msg_fat32_read_err;
+call scr64_print_string;
+mov rax, FAT_ERR_DISK_ERROR;
+stc;
+jmp .init_done
+.init_bad_bpb_msg:
+mov rsi, msg_fat32_bad_bpb;
+call scr64_print_string;
+mov rax, FAT_ERR_BAD_BPB;
+stc;
+jmp .init_done
+.init_not_fat32_msg:
+mov rsi, msg_fat32_not_fat32;
+call scr64_print_string;
+mov rax, FAT_ERR_NOT_FAT32;
+stc
+.init_done:
+pop r13;
+pop r12;
+pop rdx;
+pop rdi;
+pop rsi;
+pop rbx;
+ret
 
 ;--------------------------------------------------------------------------
 cluster_to_lba: ; Input EDI = cluster
-    cmp edi, FAT32_CLUSTER_MIN_VALID; jb .invalid_cluster_ctl; mov eax, edi; sub eax, 2; movzx ecx, byte [fat32_sectors_per_cluster]; mul ecx; add eax, [fat32_first_data_sector]; add rax, [fat32_partition_lba]; clc; ret
-.invalid_cluster_ctl: xor rax, rax; stc; ret
+    cmp edi, FAT32_CLUSTER_MIN_VALID;
+jb .invalid_cluster_ctl;
+mov eax, edi;
+sub eax, 2;
+movzx ecx, byte [fat32_sectors_per_cluster];
+mul ecx; add eax, [fat32_first_data_sector];
+add rax, [fat32_partition_lba];
+clc;
+ret
+.invalid_cluster_ctl:
+xor rax, rax;
+stc;
+ret
 
 ;--------------------------------------------------------------------------
 fat32_get_next_cluster: ; Input EDI = current cluster
-    push rbx; push rdx; push rdi; push rsi
-    mov esi, edi; mov eax, esi; shl eax, 2; mov ebx, [fat32_bytes_per_sector]; xor edx, edx; div ebx
-    mov rdi, rax; add rdi, [fat32_fat_lba]; call fat32_read_fat_sector; jc .fat_op_error_exit
-    mov eax, [sector_buffer + rdx]; and eax, 0x0FFFFFFF
-    cmp eax, FAT32_CLUSTER_BAD; je .fat_bad_cluster_exit
-    cmp eax, FAT32_CLUSTER_EOF_MIN; jae .fat_eof_exit
-    clc; jmp .fat_get_done
-.fat_bad_cluster_exit: mov rax, FAT_ERR_BAD_CLUSTER; stc; jmp .fat_get_done
-.fat_eof_exit: mov rax, FAT32_CLUSTER_EOF_MIN; clc; jmp .fat_get_done
+    push rbx;
+push rdx;
+push rdi;
+push rsi
+    mov esi, edi;
+mov eax, esi;
+shl eax, 2;
+mov ebx, [fat32_bytes_per_sector];
+xor edx, edx;
+div ebx
+    mov rdi, rax;
+add rdi, [fat32_fat_lba];
+call fat32_read_fat_sector;
+jc .fat_op_error_exit
+    mov eax, [sector_buffer + rdx];
+and eax, 0x0FFFFFFF
+    cmp eax, FAT32_CLUSTER_BAD;
+je .fat_bad_cluster_exit
+    cmp eax, FAT32_CLUSTER_EOF_MIN;
+jae .fat_eof_exit
+    clc;
+jmp .fat_get_done
+.fat_bad_cluster_exit:
+mov rax, FAT_ERR_BAD_CLUSTER;
+stc;
+jmp .fat_get_done
+.fat_eof_exit:
+mov rax, FAT32_CLUSTER_EOF_MIN;
+clc;
+jmp .fat_get_done
 .fat_op_error_exit:
-.fat_get_done: pop rsi; pop rdi; pop rdx; pop rbx; ret
+.fat_get_done:
+pop rsi;
+pop rdi;
+pop rdx;
+pop rbx;
+ret
 
 ;--------------------------------------------------------------------------
 read_cluster_chain: ; Input RDI=StartCluster, RSI=BufferPtr, RDX=BytesToRead
